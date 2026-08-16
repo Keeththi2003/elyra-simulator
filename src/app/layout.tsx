@@ -3,9 +3,9 @@ import './globals.css'
 import { Providers } from '@/components/Providers'
 
 export const metadata: Metadata = {
-  title: 'Elyra · Hardware Simulator',
+  title: 'Elyra Simulator',
   description:
-    'Web dashboard standing in for the physical appliances in an Elyra smart home, driven live by Cloud Firestore.',
+    'Web dashboard standing in for the physical appliances in an Elyra smart home,',
 }
 
 export default function RootLayout({
