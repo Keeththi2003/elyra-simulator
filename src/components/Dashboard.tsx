@@ -9,10 +9,28 @@ import { deviceStatus, type Device } from '@/lib/types'
 
 export function Dashboard() {
   const { user, logout } = useAuth()
-  const { devices, floors, rooms, notifications, loading, error } =
+  const { devices, floors, rooms, notifications, profile, loading, error } =
     useElyraData(user?.uid ?? null)
 
   const [floorFilter, setFloorFilter] = useState<string>('ALL')
+
+  const displayName =
+    profile?.name?.trim() ||
+    user?.displayName?.trim() ||
+    user?.email?.split('@')[0] ||
+    'Signed in'
+
+  /*
+   * A device belongs to a floor either directly, or through the room it sits
+   * in. Filtering on device.floorId alone hid devices that were added to a
+   * room without their own floorId being set.
+   */
+  const floorIdOf = useMemo(() => {
+    const roomFloor = new Map(rooms.map((r) => [r.id, r.floorId]))
+
+    return (device: Device) =>
+      device.floorId || roomFloor.get(device.roomId) || ''
+  }, [rooms])
 
   const locationOf = useMemo(() => {
     const floorNames = new Map(floors.map((f) => [f.id, f.name]))
@@ -24,12 +42,17 @@ export function Dashboard() {
         .join(' · ') || 'Unassigned'
   }, [floors, rooms])
 
-  const visibleDevices = useMemo(
-    () =>
-      floorFilter === 'ALL'
-        ? devices
-        : devices.filter((d) => d.floorId === floorFilter),
-    [devices, floorFilter],
+  const visibleDevices = useMemo(() => {
+    if (floorFilter === 'ALL') return devices
+    if (floorFilter === 'UNASSIGNED') {
+      return devices.filter((d) => !floorIdOf(d))
+    }
+    return devices.filter((d) => floorIdOf(d) === floorFilter)
+  }, [devices, floorFilter, floorIdOf])
+
+  const unassignedCount = useMemo(
+    () => devices.filter((d) => !floorIdOf(d)).length,
+    [devices, floorIdOf],
   )
 
   const onCount = devices.filter((d) => deviceStatus(d) === 'ON').length
@@ -55,7 +78,7 @@ export function Dashboard() {
             </h1>
             <p className="truncate text-xs text-text-secondary">
               <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-success align-middle" />
-              Live from Firestore · {user?.email}
+              Live · {displayName}
             </p>
           </div>
 
@@ -100,18 +123,26 @@ export function Dashboard() {
                 onClick={() => setFloorFilter(floor.id)}
               />
             ))}
+
+            {unassignedCount > 0 && (
+              <FilterChip
+                label={`Unassigned (${unassignedCount})`}
+                selected={floorFilter === 'UNASSIGNED'}
+                onClick={() => setFloorFilter('UNASSIGNED')}
+              />
+            )}
           </section>
         )}
 
         <section className="mt-6">
           {loading ? (
-            <EmptyState message="Connecting to Firestore…" />
+            <EmptyState message="Connecting…" />
           ) : visibleDevices.length === 0 ? (
             <EmptyState
               message={
                 devices.length === 0
-                  ? 'No devices yet. Add one in the Elyra mobile app and it will appear here instantly.'
-                  : 'No devices on this floor.'
+                  ? 'No appliances yet. Add a device in the Elyra app and it will appear here instantly.'
+                  : 'No appliances on this floor.'
               }
             />
           ) : (
