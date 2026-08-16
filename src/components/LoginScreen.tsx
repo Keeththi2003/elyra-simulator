@@ -42,7 +42,7 @@ export function LoginScreen() {
 
         <div className="mt-14">
           <h1 className="text-3xl font-semibold tracking-tight">
-            Hardware simulator
+            Elyra simulator
           </h1>
           <p className="mt-3 text-text-secondary">
             Sign in with your Elyra account to mirror its devices.
