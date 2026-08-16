@@ -5,7 +5,7 @@ import { Providers } from '@/components/Providers'
 export const metadata: Metadata = {
   title: 'Elyra Simulator',
   description:
-    'Web dashboard standing in for the physical appliances in an Elyra smart home,',
+    'Live dashboard for the appliances in an Elyra smart home.',
 }
 
 export default function RootLayout({
