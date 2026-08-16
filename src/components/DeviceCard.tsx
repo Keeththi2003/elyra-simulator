@@ -1,13 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { ApplianceVisual } from './ApplianceVisual'
-import {
-  setBrightness,
-  setChannel,
-  setConnectivity,
-  setPower,
-} from '@/lib/useElyraData'
+import { setConnectivity } from '@/lib/useElyraData'
 import {
   deviceStatus,
   deviceTypeLabel,
@@ -17,11 +11,24 @@ import {
   type DeviceStatus,
 } from '@/lib/types'
 
-const CONNECTIVITY_OPTIONS: DeviceConnectivity[] = [
-  'ONLINE',
-  'OFFLINE',
-  'ERROR',
-]
+/**
+ * A single appliance on the simulated wall.
+ *
+ * This card is deliberately read-only for anything a user would operate —
+ * power, brightness, individual channels. Those are commanded from the mobile
+ * app; the hardware only obeys and reports back. Showing them here as mirrors
+ * is what proves the app → cloud → appliance path actually works.
+ *
+ * The one thing the hardware genuinely owns is its own health, so the link
+ * state (online / offline / fault) is the only writable control.
+ */
+
+const LINK_STATES: { value: DeviceConnectivity; label: string; hint: string }[] =
+  [
+    { value: 'ONLINE', label: 'Healthy', hint: 'Connected and responding' },
+    { value: 'OFFLINE', label: 'Unplugged', hint: 'Lost power or network' },
+    { value: 'ERROR', label: 'Faulty', hint: 'Hardware reporting a fault' },
+  ]
 
 export function DeviceCard({
   device,
@@ -48,66 +55,76 @@ export function DeviceCard({
 
       <ApplianceVisual device={device} live={live} />
 
-      {/* Power — the simulator stands in for someone at the wall switch. */}
+      {/* Mirror of the commanded state — not a control. */}
       <div className="flex items-center justify-between rounded-2xl bg-surface-secondary px-4 py-3">
-        <div>
+        <div className="min-w-0">
           <p className="text-sm font-medium">Power</p>
           <p className="text-xs text-text-secondary">
             {reachable
               ? device.isOn
                 ? 'Running'
                 : 'Idle'
-              : 'Unreachable'}
+              : 'Not responding'}
           </p>
         </div>
 
-        <Toggle
-          checked={device.isOn}
-          disabled={!reachable}
-          onChange={(next) => setPower(device, next)}
-        />
+        <StateLamp on={live} />
       </div>
 
       {device.type === 'LIGHT' && (
-        <BrightnessControl device={device} disabled={!reachable} />
+        <Readout
+          label="Brightness"
+          value={`${device.brightness ?? 100}%`}
+          muted={!reachable}
+        />
       )}
 
       {device.type === 'MULTI_SWITCH' && (
-        <ChannelControls device={device} disabled={!reachable} />
+        <ChannelReadout device={device} reachable={reachable} />
       )}
 
       {device.type === 'SAFETY_APPLIANCE' && (
-        <p className="mt-3 rounded-2xl bg-surface-secondary px-4 py-3 text-xs text-text-secondary">
-          Cuts off automatically after{' '}
-          <span className="text-text-primary">
-            {device.maxOnDurationMinutes ?? 30} min
-          </span>{' '}
-          of continuous use.
-        </p>
+        <Readout
+          label="Auto cut-off"
+          value={`${device.maxOnDurationMinutes ?? 30} min`}
+          muted={!reachable}
+        />
       )}
 
-      {/* Connectivity is what real hardware reports; here it is simulated. */}
+      {device.type === 'SECURITY_CAMERA' && (
+        <Readout
+          label="Stream"
+          value={device.cameraUri?.trim() ? 'Configured' : 'Not set'}
+          muted={!reachable}
+        />
+      )}
+
+      {/* The only writable control: what the physical unit reports about itself. */}
       <div className="mt-4 border-t border-border-subtle pt-4">
         <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
-          Simulate hardware link
+          Hardware condition
+        </p>
+        <p className="mt-1 text-xs text-text-secondary">
+          Simulate a fault to see the app react.
         </p>
 
-        <div className="mt-2 flex gap-2">
-          {CONNECTIVITY_OPTIONS.map((option) => {
-            const selected = device.connectivity === option
+        <div className="mt-3 flex gap-2">
+          {LINK_STATES.map((state) => {
+            const selected = device.connectivity === state.value
 
             return (
               <button
-                key={option}
+                key={state.value}
                 type="button"
-                onClick={() => setConnectivity(device.id, option)}
+                title={state.hint}
+                onClick={() => setConnectivity(device.id, state.value)}
                 className={`flex-1 rounded-xl px-2 py-2 text-xs font-medium transition ${
                   selected
                     ? 'bg-primary text-on-primary'
                     : 'bg-surface-secondary text-text-secondary hover:bg-surface-interactive'
                 }`}
               >
-                {option.charAt(0) + option.slice(1).toLowerCase()}
+                {state.label}
               </button>
             )
           })}
@@ -126,48 +143,49 @@ export function DeviceCard({
 
 // ---------------------------------------------------------------------------
 
-function BrightnessControl({
-  device,
-  disabled,
-}: {
-  device: Device
-  disabled: boolean
-}) {
-  const [value, setValue] = useState(device.brightness ?? 100)
-
-  // Keep in step with changes made on the phone while not dragging.
-  useEffect(() => {
-    setValue(device.brightness ?? 100)
-  }, [device.brightness])
-
+/** Read-only indicator standing in for a panel lamp on the unit. */
+function StateLamp({ on }: { on: boolean }) {
   return (
-    <div className="mt-3 rounded-2xl bg-surface-secondary px-4 py-3">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">Brightness</span>
-        <span className="text-sm text-text-secondary">{value}%</span>
-      </div>
-
-      <input
-        type="range"
-        min={0}
-        max={100}
-        value={value}
-        disabled={disabled}
-        onChange={(e) => setValue(Number(e.target.value))}
-        onMouseUp={() => setBrightness(device.id, value)}
-        onTouchEnd={() => setBrightness(device.id, value)}
-        className="mt-2 w-full accent-current disabled:opacity-40"
+    <div className="flex shrink-0 items-center gap-2">
+      <span
+        className={`h-2.5 w-2.5 rounded-full ${
+          on ? 'bg-success' : 'bg-text-tertiary/40'
+        }`}
       />
+      <span className="text-xs font-medium text-text-secondary">
+        {on ? 'ON' : 'OFF'}
+      </span>
     </div>
   )
 }
 
-function ChannelControls({
+function Readout({
+  label,
+  value,
+  muted,
+}: {
+  label: string
+  value: string
+  muted?: boolean
+}) {
+  return (
+    <div className="mt-3 flex items-center justify-between rounded-2xl bg-surface-secondary px-4 py-3">
+      <span className="text-sm font-medium">{label}</span>
+      <span
+        className={`text-sm ${muted ? 'text-text-tertiary' : 'text-text-secondary'}`}
+      >
+        {value}
+      </span>
+    </div>
+  )
+}
+
+function ChannelReadout({
   device,
-  disabled,
+  reachable,
 }: {
   device: Device
-  disabled: boolean
+  reachable: boolean
 }) {
   const channels = [...(device.switches ?? [])].sort(
     (a, b) => a.index - b.index,
@@ -180,55 +198,24 @@ function ChannelControls({
       <p className="text-sm font-medium">Channels</p>
 
       <div className="mt-2 flex flex-col gap-2">
-        {channels.map((channel) => (
-          <div
-            key={channel.index}
-            className="flex items-center justify-between gap-3"
-          >
-            <span className="min-w-0 flex-1 truncate text-sm text-text-secondary">
-              {channel.name || `Switch ${channel.index}`}
-            </span>
+        {channels.map((channel) => {
+          const on = reachable && channel.isOn
 
-            <Toggle
-              checked={channel.isOn}
-              disabled={disabled}
-              onChange={(next) => setChannel(device, channel.index, next)}
-            />
-          </div>
-        ))}
+          return (
+            <div
+              key={channel.index}
+              className="flex items-center justify-between gap-3"
+            >
+              <span className="min-w-0 flex-1 truncate text-sm text-text-secondary">
+                {channel.name || `Switch ${channel.index}`}
+              </span>
+
+              <StateLamp on={on} />
+            </div>
+          )
+        })}
       </div>
     </div>
-  )
-}
-
-function Toggle({
-  checked,
-  disabled,
-  onChange,
-}: {
-  checked: boolean
-  disabled?: boolean
-  onChange: (next: boolean) => void
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      disabled={disabled}
-      onClick={() => onChange(!checked)}
-      className={`relative h-7 w-12 shrink-0 rounded-full transition disabled:cursor-not-allowed disabled:opacity-40 ${
-        checked ? 'bg-primary' : 'bg-surface-interactive'
-      }`}
-    >
-      <span
-        className={`absolute top-1 h-5 w-5 rounded-full transition-transform ${
-          checked
-            ? 'translate-x-6 bg-on-primary'
-            : 'translate-x-1 bg-text-tertiary'
-        }`}
-      />
-    </button>
   )
 }
 
@@ -243,7 +230,7 @@ function StatusPill({ status }: { status: DeviceStatus }) {
   const labels: Record<DeviceStatus, string> = {
     ON: 'On',
     OFF: 'Off',
-    ERROR: 'Error',
+    ERROR: 'Fault',
     DISCONNECTED: 'Offline',
   }
 
