@@ -17,7 +17,29 @@ import type {
   DeviceConnectivity,
   Floor,
   Room,
+  UserProfile,
 } from './types'
+
+/**
+ * Fills in fields that may be absent on older documents.
+ *
+ * Devices written before `connectivity` existed have no such field, which
+ * would read as `undefined` and make the device look unreachable — silently
+ * disabling every control on its card. Treat a missing link state as ONLINE
+ * and a missing channel list as empty.
+ */
+function normaliseDevice(raw: Record<string, unknown>, id: string): Device {
+  return {
+    ...(raw as unknown as Device),
+    id,
+    connectivity: (raw.connectivity as DeviceConnectivity) ?? 'ONLINE',
+    isOn: Boolean(raw.isOn),
+    switches: Array.isArray(raw.switches) ? (raw.switches as Device['switches']) : [],
+    totalOnSeconds: Number(raw.totalOnSeconds ?? 0),
+    floorId: (raw.floorId as string) ?? '',
+    roomId: (raw.roomId as string) ?? '',
+  }
+}
 
 /**
  * Subscribes to every collection this dashboard renders.
@@ -31,6 +53,7 @@ export function useElyraData(uid: string | null) {
   const [floors, setFloors] = useState<Floor[]>([])
   const [rooms, setRooms] = useState<Room[]>([])
   const [notifications, setNotifications] = useState<AppNotification[]>([])
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -40,6 +63,7 @@ export function useElyraData(uid: string | null) {
       setFloors([])
       setRooms([])
       setNotifications([])
+      setProfile(null)
       setLoading(false)
       return
     }
@@ -49,13 +73,14 @@ export function useElyraData(uid: string | null) {
     const subscribe = <T,>(
       name: string,
       onData: (rows: T[]) => void,
+      map: (raw: Record<string, unknown>, id: string) => T,
     ) =>
       onSnapshot(
         query(collection(db, name), where('userId', '==', uid)),
         (snapshot) => {
           onData(
-            snapshot.docs.map(
-              (d) => ({ ...(d.data() as object), id: d.id }) as T,
+            snapshot.docs.map((d) =>
+              map(d.data() as Record<string, unknown>, d.id),
             ),
           )
           setLoading(false)
@@ -66,11 +91,30 @@ export function useElyraData(uid: string | null) {
         },
       )
 
+    const plain = <T,>(raw: Record<string, unknown>, id: string) =>
+      ({ ...raw, id }) as T
+
     const unsubscribers = [
-      subscribe<Device>('devices', setDevices),
-      subscribe<Floor>('floors', setFloors),
-      subscribe<Room>('rooms', setRooms),
-      subscribe<AppNotification>('notifications', setNotifications),
+      subscribe<Device>('devices', setDevices, normaliseDevice),
+      subscribe<Floor>('floors', setFloors, plain<Floor>),
+      subscribe<Room>('rooms', setRooms, plain<Room>),
+      subscribe<AppNotification>(
+        'notifications',
+        setNotifications,
+        plain<AppNotification>,
+      ),
+
+      // The display name lives on the user profile document, not on the
+      // Firebase Auth record, so the phone and this dashboard agree.
+      onSnapshot(
+        doc(db, 'users', uid),
+        (snap) => {
+          setProfile(
+            snap.exists() ? ({ ...snap.data(), id: snap.id } as UserProfile) : null,
+          )
+        },
+        () => setProfile(null),
+      ),
     ]
 
     return () => unsubscribers.forEach((u) => u())
@@ -90,6 +134,7 @@ export function useElyraData(uid: string | null) {
     floors,
     rooms,
     notifications: sortedNotifications,
+    profile,
     loading,
     error,
   }

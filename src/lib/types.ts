@@ -60,6 +60,12 @@ export interface Room {
   floorId: string
 }
 
+export interface UserProfile {
+  id: string
+  name: string
+  email: string
+}
+
 export type NotificationType =
   | 'SAFETY_CUTOFF'
   | 'DEVICE_ERROR'
