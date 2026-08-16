@@ -8,7 +8,6 @@ import {
   query,
   updateDoc,
   where,
-  Timestamp,
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type {
@@ -143,9 +142,14 @@ export function useElyraData(uid: string | null) {
 // ---------------------------------------------------------------------------
 // Writes
 //
-// The simulator represents the physical unit, so it owns the fields hardware
-// would report — chiefly connectivity. It can also actuate power, standing in
-// for someone physically pressing a switch on the wall.
+// The simulator stands in for the physical unit, so it only writes what real
+// hardware would report about itself: its own health.
+//
+// Power, brightness and individual channels are deliberately NOT writable
+// here — those are commanded by the user from the mobile app, and the whole
+// point of this dashboard is to prove those commands reach the appliance.
+// Letting it drive them too would make it a second remote control rather than
+// a stand-in for hardware.
 // ---------------------------------------------------------------------------
 
 export async function setConnectivity(
@@ -153,41 +157,4 @@ export async function setConnectivity(
   connectivity: DeviceConnectivity,
 ) {
   await updateDoc(doc(db, 'devices', deviceId), { connectivity })
-}
-
-export async function setPower(device: Device, isOn: boolean) {
-  const elapsed =
-    !isOn && device.lastOnAt
-      ? Math.max(0, Math.floor(Date.now() / 1000) - device.lastOnAt.seconds)
-      : 0
-
-  await updateDoc(doc(db, 'devices', device.id), {
-    isOn,
-    // Powering the unit drives every channel with it, matching the phone.
-    switches: (device.switches ?? []).map((c) => ({ ...c, isOn })),
-    lastOnAt: isOn ? Timestamp.now() : null,
-    totalOnSeconds: (device.totalOnSeconds ?? 0) + elapsed,
-  })
-}
-
-export async function setChannel(
-  device: Device,
-  index: number,
-  isOn: boolean,
-) {
-  const switches = (device.switches ?? []).map((c) =>
-    c.index === index ? { ...c, isOn } : c,
-  )
-
-  const anyOn = switches.some((c) => c.isOn)
-
-  await updateDoc(doc(db, 'devices', device.id), {
-    switches,
-    isOn: anyOn,
-    lastOnAt: anyOn ? (device.lastOnAt ?? Timestamp.now()) : null,
-  })
-}
-
-export async function setBrightness(deviceId: string, brightness: number) {
-  await updateDoc(doc(db, 'devices', deviceId), { brightness })
 }
