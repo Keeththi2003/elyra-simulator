@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Monochrome token scale shared with the Android app.
+ *
+ * Light: page on a soft neutral, cards pure white on top.
+ * Dark:  page pure black, cards lifted one step so they separate.
+ */
+:root {
+  --background: 247 247 247;
+  --surface: 255 255 255;
+  --surface-secondary: 242 242 242;
+  --surface-interactive: 229 229 229;
+
+  --text-primary: 0 0 0;
+  --text-secondary: 95 99 104;
+  --text-tertiary: 115 115 115;
+
+  --border: 229 229 229;
+  --border-subtle: 242 242 242;
+
+  --primary: 0 0 0;
+  --on-primary: 255 255 255;
+
+  --success: 24 128 56;
+  --warning: 183 121 31;
+  --danger: 215 0 21;
+}
+
+.dark {
+  --background: 0 0 0;
+  --surface: 23 23 23;
+  --surface-secondary: 34 34 34;
+  --surface-interactive: 42 42 42;
+
+  --text-primary: 255 255 255;
+  --text-secondary: 168 168 168;
+  --text-tertiary: 115 115 115;
+
+  --border: 42 42 42;
+  --border-subtle: 34 34 34;
+
+  --primary: 255 255 255;
+  --on-primary: 0 0 0;
+
+  --success: 52 168 83;
+  --warning: 245 166 35;
+  --danger: 255 69 58;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-background text-text-primary antialiased;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+}
+
+/* Prevents a light flash before the stored theme is applied. */
+.theme-loading {
+  visibility: hidden;
+}
