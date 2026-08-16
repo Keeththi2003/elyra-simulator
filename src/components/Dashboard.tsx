@@ -51,7 +51,7 @@ export function Dashboard() {
 
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-semibold">
-              Hardware simulator
+              Elyra simulator
             </h1>
             <p className="truncate text-xs text-text-secondary">
               <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-success align-middle" />
