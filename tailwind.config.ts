@@ -1,10 +1,6 @@
 import type { Config } from 'tailwindcss'
 
-/*
- * Mirrors the Android design system: a monochrome scale where the page sits
- * on a soft neutral and cards are pure white on top of it (inverted in dark
- * mode), so surfaces separate without needing shadows.
- */
+// Monochrome scale mirroring the Android design system.
 const config: Config = {
   darkMode: 'class',
   content: ['./src/**/*.{ts,tsx}'],

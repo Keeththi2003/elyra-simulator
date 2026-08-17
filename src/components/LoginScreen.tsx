@@ -6,10 +6,7 @@ import { FirebaseError } from 'firebase/app'
 import { auth } from '@/lib/firebase'
 import { ThemeToggle } from './ThemeToggle'
 
-/**
- * Signs in against the same Firebase Auth project as the phone, so the
- * simulator sees exactly the devices that account owns.
- */
+// Same Auth project as the phone, so it sees that account's devices.
 export function LoginScreen() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

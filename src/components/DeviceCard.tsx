@@ -11,18 +11,7 @@ import {
   type DeviceStatus,
 } from '@/lib/types'
 
-/**
- * A single appliance on the simulated wall.
- *
- * This card is deliberately read-only for anything a user would operate —
- * power, brightness, individual channels. Those are commanded from the mobile
- * app; the hardware only obeys and reports back. Showing them here as mirrors
- * is what proves the app → cloud → appliance path actually works.
- *
- * The one thing the hardware genuinely owns is its own health, so the link
- * state (online / offline / fault) is the only writable control.
- */
-
+// Read-only except for the link state, which is the hardware's own condition.
 const LINK_STATES: { value: DeviceConnectivity; label: string; hint: string }[] =
   [
     { value: 'ONLINE', label: 'Healthy', hint: 'Connected and responding' },
@@ -55,7 +44,7 @@ export function DeviceCard({
 
       <ApplianceVisual device={device} live={live} />
 
-      {/* Mirror of the commanded state — not a control. */}
+      {/* Mirror of the commanded state, not a control. */}
       <div className="flex items-center justify-between rounded-2xl bg-surface-secondary px-4 py-3">
         <div className="min-w-0">
           <p className="text-sm font-medium">Power</p>
@@ -99,7 +88,7 @@ export function DeviceCard({
         />
       )}
 
-      {/* The only writable control: what the physical unit reports about itself. */}
+      {/* The only writable control. */}
       <div className="mt-4 border-t border-border-subtle pt-4">
         <p className="text-xs font-medium uppercase tracking-wide text-text-tertiary">
           Hardware condition
@@ -141,9 +130,7 @@ export function DeviceCard({
   )
 }
 
-// ---------------------------------------------------------------------------
-
-/** Read-only indicator standing in for a panel lamp on the unit. */
+/** Stands in for a panel lamp on the unit. */
 function StateLamp({ on }: { on: boolean }) {
   return (
     <div className="flex shrink-0 items-center gap-2">

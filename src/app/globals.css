@@ -2,12 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
- * Monochrome token scale shared with the Android app.
- *
- * Light: page on a soft neutral, cards pure white on top.
- * Dark:  page pure black, cards lifted one step so they separate.
- */
+/* Light: page on a soft neutral, cards white. Dark: inverted. */
 :root {
   --background: 247 247 247;
   --surface: 255 255 255;
@@ -68,7 +63,7 @@ body {
     sans-serif;
 }
 
-/* Prevents a light flash before the stored theme is applied. */
+/* Prevents a flash before the stored theme is applied. */
 .theme-loading {
   visibility: hidden;
 }

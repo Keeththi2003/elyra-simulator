@@ -1,10 +1,6 @@
 import type { Timestamp } from 'firebase/firestore'
 
-/**
- * These mirror the Android data model exactly — same collections, same field
- * names — because both clients read and write the same Firestore documents.
- * Any change here has to be made in `data/model` on the mobile side too.
- */
+// Mirrors the Android models; both clients share the same documents.
 
 export type DeviceType =
   | 'LIGHT'
@@ -15,7 +11,7 @@ export type DeviceType =
 
 export type DeviceConnectivity = 'ONLINE' | 'OFFLINE' | 'ERROR'
 
-/** Derived for display; never stored. Connectivity outranks power. */
+/** Derived, never stored. */
 export type DeviceStatus = 'ON' | 'OFF' | 'ERROR' | 'DISCONNECTED'
 
 export interface SwitchChannel {
@@ -83,11 +79,7 @@ export interface AppNotification {
   createdAt?: Timestamp | null
 }
 
-/**
- * Resolves the single status shown to a user. An unreachable device reads as
- * DISCONNECTED even if the last known power state was on, because we cannot
- * trust the power reading while the link is down.
- */
+/** Connectivity outranks power: an unreachable device is never `ON`. */
 export function deviceStatus(device: Device): DeviceStatus {
   if (device.connectivity === 'ERROR') return 'ERROR'
   if (device.connectivity === 'OFFLINE') return 'DISCONNECTED'

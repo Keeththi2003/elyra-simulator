@@ -2,20 +2,13 @@
 
 import type { Device } from '@/lib/types'
 
-/**
- * The "physical" representation of an appliance.
- *
- * Each type gets its own rendering so the dashboard reads like a wall of real
- * hardware rather than a list of rows: a bulb that actually glows at its set
- * brightness, a gang box whose individual rockers move, a camera whose feed
- * goes dark when it loses power.
- */
+/** The "physical" representation of an appliance, one per device type. */
 export function ApplianceVisual({
   device,
   live,
 }: {
   device: Device
-  /** True only when powered AND reachable. */
+  /** Powered and reachable. */
   live: boolean
 }) {
   switch (device.type) {
@@ -32,10 +25,7 @@ export function ApplianceVisual({
   }
 }
 
-// ---------------------------------------------------------------------------
-
 function LightBulb({ on, brightness }: { on: boolean; brightness: number }) {
-  // Brightness drives real opacity so the simulator shows the dim level too.
   const intensity = on ? Math.max(0.15, Math.min(1, brightness / 100)) : 0
 
   return (
@@ -144,7 +134,7 @@ function GangBox({
 
           return (
             <div key={channel.index} className="flex flex-col items-center gap-2">
-              {/* Rocker physically sits up or down with the channel state. */}
+              {/* Rocker sits up or down with the channel state. */}
               <div className="flex h-16 w-9 flex-col justify-start rounded-lg bg-current/10 p-1">
                 <div
                   className={`h-7 w-full rounded transition-transform duration-200 ${
@@ -218,7 +208,7 @@ function Camera({ on, uri }: { on: boolean; uri: string | null }) {
       >
         {on ? (
           <>
-            {/* Scanline treatment stands in for a real stream. */}
+            {/* Scanlines stand in for a real stream. */}
             <div
               className="absolute inset-0 opacity-25"
               style={{

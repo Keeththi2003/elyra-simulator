@@ -20,11 +20,7 @@ export function Dashboard() {
     user?.email?.split('@')[0] ||
     'Signed in'
 
-  /*
-   * A device belongs to a floor either directly, or through the room it sits
-   * in. Filtering on device.floorId alone hid devices that were added to a
-   * room without their own floorId being set.
-   */
+  // A device belongs to a floor directly, or via the room it sits in.
   const floorIdOf = useMemo(() => {
     const roomFloor = new Map(rooms.map((r) => [r.id, r.floorId]))
 

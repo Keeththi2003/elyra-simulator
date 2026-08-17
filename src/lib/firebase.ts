@@ -11,14 +11,7 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 }
 
-/*
- * Fail with something readable when the environment is not configured.
- *
- * Without this, a missing .env.local surfaces as `auth/invalid-api-key` from
- * deep inside the SDK, which gives no hint that the real problem is an absent
- * env file — and .env.local is gitignored, so it goes missing on a fresh
- * clone or after `git clean`.
- */
+// A missing .env.local otherwise surfaces as `auth/invalid-api-key`.
 const missingKeys = Object.entries(firebaseConfig)
   .filter(([, value]) => !value)
   .map(([key]) => key)
@@ -31,10 +24,7 @@ if (missingKeys.length > 0) {
   )
 }
 
-/**
- * Next.js re-executes modules across hot reloads and route segments, so the
- * app is initialised once and reused rather than re-created each time.
- */
+// Reused across hot reloads rather than re-initialised.
 export const firebaseApp: FirebaseApp =
   getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)
 

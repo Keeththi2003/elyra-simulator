@@ -12,9 +12,7 @@ import {
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 
-// ---------------------------------------------------------------------------
 // Theme
-// ---------------------------------------------------------------------------
 
 type Theme = 'light' | 'dark'
 
@@ -67,9 +65,7 @@ function ThemeProvider({ children }: { children: ReactNode }) {
   )
 }
 
-// ---------------------------------------------------------------------------
 // Auth
-// ---------------------------------------------------------------------------
 
 interface AuthContextValue {
   user: User | null

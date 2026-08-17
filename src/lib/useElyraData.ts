@@ -19,14 +19,7 @@ import type {
   UserProfile,
 } from './types'
 
-/**
- * Fills in fields that may be absent on older documents.
- *
- * Devices written before `connectivity` existed have no such field, which
- * would read as `undefined` and make the device look unreachable — silently
- * disabling every control on its card. Treat a missing link state as ONLINE
- * and a missing channel list as empty.
- */
+/** Defaults fields absent on documents written before they existed. */
 function normaliseDevice(raw: Record<string, unknown>, id: string): Device {
   return {
     ...(raw as unknown as Device),
@@ -40,13 +33,7 @@ function normaliseDevice(raw: Record<string, unknown>, id: string): Device {
   }
 }
 
-/**
- * Subscribes to every collection this dashboard renders.
- *
- * All four use Firestore snapshot listeners, so a change written by the phone
- * lands here without a refresh — which is the whole point of the simulator:
- * it stands in for physical hardware reacting to the database.
- */
+/** Snapshot listeners for everything the dashboard renders. */
 export function useElyraData(uid: string | null) {
   const [devices, setDevices] = useState<Device[]>([])
   const [floors, setFloors] = useState<Floor[]>([])
@@ -103,8 +90,7 @@ export function useElyraData(uid: string | null) {
         plain<AppNotification>,
       ),
 
-      // The display name lives on the user profile document, not on the
-      // Firebase Auth record, so the phone and this dashboard agree.
+      // The display name lives on the profile document, not the Auth record.
       onSnapshot(
         doc(db, 'users', uid),
         (snap) => {
@@ -139,19 +125,8 @@ export function useElyraData(uid: string | null) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Writes
-//
-// The simulator stands in for the physical unit, so it only writes what real
-// hardware would report about itself: its own health.
-//
-// Power, brightness and individual channels are deliberately NOT writable
-// here — those are commanded by the user from the mobile app, and the whole
-// point of this dashboard is to prove those commands reach the appliance.
-// Letting it drive them too would make it a second remote control rather than
-// a stand-in for hardware.
-// ---------------------------------------------------------------------------
-
+// The only write: link health is what real hardware reports about itself.
+// Power, brightness and channels are commanded by the app, never from here.
 export async function setConnectivity(
   deviceId: string,
   connectivity: DeviceConnectivity,
